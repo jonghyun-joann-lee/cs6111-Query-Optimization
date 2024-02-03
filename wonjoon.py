@@ -1,4 +1,6 @@
 from googleapiclient.discovery import build
+from collections import Counter
+import re
 import sys
 
 
@@ -26,10 +28,8 @@ def collect_feedback(results):
             relevant_results.append(result)
     return relevant_results
 
-def refine_query(original_query, relevant_results):
-    from collections import Counter
-    import re
 
+def refine_query(original_query, relevant_results):
     # Basic cleanup and word extraction from the original query to avoid duplication
     original_keywords = set(re.findall(r'\w+', original_query.lower()))
 
@@ -55,7 +55,8 @@ def refine_query(original_query, relevant_results):
 
 
 def main():
-
+    
+    # Get parameters
     api_key = sys.argv[1]
     engine_key = sys.argv[2]
     query = sys.argv[3]
@@ -78,7 +79,10 @@ def main():
         
         # Display feedback
         print("======================")
-        print(f"FEEDBACK SUMMARY\nQuery {query}\nPrecision {precision}")
+        print("FEEDBACK SUMMARY")
+        print(f"Query {query}")
+        print(f"Precision {precision}")
+
         if precision >= target_precision:
             print("Desired precision reached, done")
             break
