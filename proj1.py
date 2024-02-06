@@ -58,8 +58,8 @@ def main():
     # Get parameters
     api_key = sys.argv[1]
     engine_key = sys.argv[2]
-    query = sys.argv[3]
-    target_precision = sys.argv[4]
+    target_precision = sys.argv[3]
+    query = sys.argv[4]
     
     while True:
         # Display parameters
