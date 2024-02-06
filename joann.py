@@ -28,7 +28,17 @@ def collect_feedback(results):
     return relevant_results
 
 
-def refine_query(original_query, relevant_results):
+def load_stop_words(file_path):
+    # Read a file containing stop words and return them as a set
+    stop_words = set()
+    with open(file_path, 'r') as file:
+        for line in file:
+            stop_word = line.strip()
+            stop_words.add(stop_word)
+    return stop_words
+
+
+def refine_query(original_query, relevant_results, stop_words):
     # Basic cleanup and word extraction from the original query to avoid duplication
     original_keywords = set(re.findall(r'\w+', original_query.lower()))
 
@@ -39,10 +49,17 @@ def refine_query(original_query, relevant_results):
         content = f"{result['title']} {result['snippet']}"
         words.extend(re.findall(r'\w+', content.lower()))
 
+    # Filter out stop words
+    not_stop_words = []
+    for word in words:
+        if word not in stop_words:
+            not_stop_words.append(word)
+
     # Count word frequencies, excluding original query words
-    word_freq = Counter(words)
+    word_freq = Counter(not_stop_words)
     for word in original_keywords:
-        del word_freq[word]  # Exclude words already in the query
+        if word in word_freq:
+            del word_freq[word]  # Exclude words already in the query
 
     # Pick the top 2 most frequent new words that are not in the original query
     new_keywords = [word for word, freq in word_freq.most_common(2)]
@@ -54,7 +71,10 @@ def refine_query(original_query, relevant_results):
 
 
 def main():
-    
+    # Load stop words
+    stop_words_file = 'proj1-stop.txt'
+    stop_words = load_stop_words(stop_words_file)
+
     # Get parameters
     api_key = sys.argv[1]
     engine_key = sys.argv[2]
@@ -90,7 +110,7 @@ def main():
             break
         else: 
             print(f"Still below the desired precision of {target_precision}")
-        query = refine_query(query, relevant_results)
+        query = refine_query(query, relevant_results, stop_words)
         print(f"Augmenting by {query}")
 
 
