@@ -19,8 +19,7 @@ def collect_feedback(results):
         print(f"Result {index}\n[")
         print(f" URL: {result['link']}")
         print(f" Title: {result['title']}")
-        print(f" Summary: {result['snippet']}]")
-        print("\n")
+        print(f" Summary: {result['snippet']}\n]\n")
         
         # Ask for user feedback
         feedback = input(f"Relevant (Y/N)?").strip().lower()
@@ -110,7 +109,7 @@ def main():
             print(f"Still below the desired precision of {target_precision}")
         
         new_keywords = refine_query(query, relevant_results, stop_words)
-        print(f"Augmenting by  {new_keywords}")
+        print(f"Augmenting by  {' '.join(new_keywords)}")
 
         # Form the new query by combining original query and new keywords
         query = f"{query} {' '.join(new_keywords)}"
