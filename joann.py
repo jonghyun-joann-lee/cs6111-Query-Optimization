@@ -19,7 +19,7 @@ def collect_feedback(results):
         print(f"Result {index}\n[")
         print(f" URL: {result['link']}")
         print(f" Title: {result['title']}")
-        print(f" Summary: {result['snippet']}\n]")
+        print(f" Summary: {result['snippet']}]")
         print("\n")
         
         # Ask for user feedback
@@ -65,10 +65,7 @@ def refine_query(original_query, relevant_results, stop_words):
     # Pick the top 2 most frequent new words that are not in the original query
     new_keywords = [word for word, freq in word_freq.most_common(2)]
 
-    # Form the new query by combining original query and new keywords
-    new_query = f"{original_query} {' '.join(new_keywords)}"
-
-    return new_query
+    return new_keywords
 
 
 def main():
@@ -111,9 +108,13 @@ def main():
             break
         else: 
             print(f"Still below the desired precision of {target_precision}")
-        query = refine_query(query, relevant_results, stop_words)
-        print(f"Augmenting by {query}")
+        
+        new_keywords = refine_query(query, relevant_results, stop_words)
+        print(f"Augmenting by  {new_keywords}")
 
+        # Form the new query by combining original query and new keywords
+        query = f"{query} {' '.join(new_keywords)}"
+        
 
 if __name__ == "__main__":
     main()
