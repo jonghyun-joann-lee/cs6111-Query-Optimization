@@ -20,9 +20,10 @@ def collect_feedback(results):
         print(f" URL: {result['link']}")
         print(f" Title: {result['title']}")
         print(f" Summary: {result['snippet']}\n]")
+        print("\n")
         
         # Ask for user feedback
-        feedback = input(f"Relevant (Y/N) for Result {index}?").strip().lower()
+        feedback = input(f"Relevant (Y/N)?").strip().lower()
         if feedback == 'y':
             relevant_results.append(result)
     return relevant_results
