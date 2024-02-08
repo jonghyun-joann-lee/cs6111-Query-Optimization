@@ -2,6 +2,7 @@ from googleapiclient.discovery import build
 from collections import Counter
 import re
 import sys
+import math
 
 
 # API setup
@@ -38,31 +39,42 @@ def load_stop_words(file_path):
     return stop_words
 
 
-def refine_query(original_query, relevant_results, stop_words):
+def refine_query(original_query, relevant_docs, stop_words):
     # Basic cleanup and word extraction from the original query to avoid duplication
     original_keywords = set(re.findall(r'\w+', original_query.lower()))
 
-    # Collect words from relevant results
-    words = []
-    for result in relevant_results:
-        # Extract words from title ONLY
-        content = f"{result['title']}"
-        words.extend(re.findall(r'\w+', content.lower()))
+    # Set up for tf-idf calculations
+    doc_term_freq = [] # List of dictionaries for term frequencies in each document
+    doc_freq = Counter() # Counter for document frequency of each term
 
-    # Filter out stop words
-    not_stop_words = []
-    for word in words:
-        if word not in stop_words:
-            not_stop_words.append(word)
+    for doc in relevant_docs:
+        # Extract all terms from title and snippet
+        content = f"{doc['title']} {doc['snippet']}"
+        terms = re.findall(r'\w+', content.lower())
+        # Filter out stop words and original query words
+        filtered_terms = []
+        for term in terms:
+            if (term not in stop_words) and (term not in original_keywords):
+                filtered_terms.append(term)
+        
+        # Calculate term frequency for current document
+        tf = Counter(filtered_terms)
+        doc_term_freq.append(tf)
 
-    # Count word frequencies, excluding original query words
-    word_freq = Counter(not_stop_words)
-    for word in original_keywords:
-        if word in word_freq:
-            del word_freq[word]  # Exclude words already in the query
+        # Update document frequency for each unique term
+        unique_terms = set(filtered_terms)
+        for term in unique_terms:
+            doc_freq[term] += 1
+        
+    # Score terms based on tf-idf calculations
+    term_scores = Counter()
+    for tf in doc_term_freq:
+        for term, freq in tf.items():
+            idf = math.log(len(relevant_docs) / doc_freq[term])
+            term_scores[term] += (1 + math.log(freq)) * idf
 
     # Pick the top 2 most frequent new words that are not in the original query
-    new_keywords = [word for word, freq in word_freq.most_common(2)]
+    new_keywords = [word for word, _ in term_scores.most_common(2)]
 
     return new_keywords
 
