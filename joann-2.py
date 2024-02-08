@@ -45,12 +45,18 @@ def refine_query(original_query, relevant_results, stop_words):
     # Collect words from relevant results
     words = []
     for result in relevant_results:
-        # Extract words from title and snippet
-        content = f"{result['title']} {result['snippet']}"
+        # Extract words from title ONLY
+        content = f"{result['title']}"
         words.extend(re.findall(r'\w+', content.lower()))
 
+    # Filter out stop words
+    not_stop_words = []
+    for word in words:
+        if word not in stop_words:
+            not_stop_words.append(word)
+
     # Count word frequencies, excluding original query words
-    word_freq = Counter(words)
+    word_freq = Counter(not_stop_words)
     for word in original_keywords:
         if word in word_freq:
             del word_freq[word]  # Exclude words already in the query
