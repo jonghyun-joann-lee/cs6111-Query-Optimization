@@ -83,16 +83,19 @@ def refine_query(original_query, relevant_docs, non_relevant_docs, stop_words):
     # Handle relevant documents
     for tf in relevant_tf:
         for term, freq in tf.items():
-            idf = math.log((total_docs + 1) / (doc_freq[term] + 1))
+            idf = math.log(total_docs / doc_freq[term])
             tf_idf_score = (1 + math.log(freq)) * idf
             term_scores[term] += beta * tf_idf_score / len(relevant_docs)
 
     # Handle non-relevant documents
     for tf in non_relevant_tf:
         for term, freq in tf.items():
-            idf = math.log((total_docs + 1) / (doc_freq[term] + 1))
+            idf = math.log(total_docs / doc_freq[term])
             tf_idf_score = (1 + math.log(freq)) * idf
-            term_scores[term] -= gamma * tf_idf_score / len(non_relevant_docs) if len(non_relevant_docs) > 0 else 0
+            term_scores[term] -= gamma * tf_idf_score / len(non_relevant_docs)
+
+    # Filter out negative and zero scores (non-relevant terms)
+    term_scores = +term_scores
 
     # Select top 2 terms for query expansion based on adjusted scores
     new_keywords = [word for word, _ in term_scores.most_common(2) if word not in original_keywords]
