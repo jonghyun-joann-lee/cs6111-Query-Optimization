@@ -46,48 +46,47 @@ def load_stop_words(file_path):
 def refine_query(original_query, relevant_docs, non_relevant_docs, stop_words):
     original_keywords = set(re.findall(r'\w+', original_query.lower()))
 
-    # Initialize structures for TF-IDF calculations
-    relevant_tf = []  # List of term frequencies for each relevant document
-    non_relevant_tf = []  # Same for non-relevant documents
-    doc_freq = Counter()  # Document frequency for all terms across both relevant and non-relevant documents
+    # Set up for tf-idf calculations
+    relevant_tf = []  # List of term frequencies for each relevant doc
+    non_relevant_tf = []  # Same for non-relevant docs
+    doc_freq = Counter()  # Document frequency for all terms across all docs
+    total_docs = len(relevant_docs) + len(non_relevant_docs) # Total number of docs
 
-    # Process relevant documents
     for docs in [relevant_docs, non_relevant_docs]:
         for doc in docs:
+            # Extract all terms from title and snippet
             content = f"{doc['title']} {doc['snippet']}"
             terms = re.findall(r'\w+', content.lower())
+
+            # Filter out stop words and original query words
             filtered_terms = [term for term in terms if term not in stop_words and term not in original_keywords]
 
-            # Calculate term frequency for the current document and update document frequency
+            # Calculate tf for current doc and update doc freq
             tf = Counter(filtered_terms)
             if docs == relevant_docs:
                 relevant_tf.append(tf)
             else:
                 non_relevant_tf.append(tf)
 
-            for term in set(filtered_terms):
+            for term in set(filtered_terms): # Set of unique terms
                 doc_freq[term] += 1
 
     # FOR DEBUGGING
     print(relevant_tf)
-    print(non_relevant_tf)
+    print(non_relevant_tf)  
 
-    # Total number of documents (for IDF calculation)
-    total_docs = len(relevant_docs) + len(non_relevant_docs)
+    # Rocchio weights (don't need alpha)
+    beta, gamma = 0.75, 0.15
 
-    # Rocchio adjustment factors
-    alpha, beta, gamma = 1, 0.75, 0.15
-
-    # Calculate TF-IDF scores and adjust according to Rocchio
+    # Calculate tf-idf scores and term scores using Rocchio
     term_scores = Counter()
-    # Handle relevant documents
+
     for tf in relevant_tf:
         for term, freq in tf.items():
             idf = math.log(total_docs / doc_freq[term])
             tf_idf_score = (1 + math.log(freq)) * idf
             term_scores[term] += beta * tf_idf_score / len(relevant_docs)
 
-    # Handle non-relevant documents
     for tf in non_relevant_tf:
         for term, freq in tf.items():
             idf = math.log(total_docs / doc_freq[term])
@@ -98,7 +97,7 @@ def refine_query(original_query, relevant_docs, non_relevant_docs, stop_words):
     term_scores = +term_scores
 
     # Select top 2 terms for query expansion based on adjusted scores
-    new_keywords = [word for word, _ in term_scores.most_common(2) if word not in original_keywords]
+    new_keywords = [word for word, _ in term_scores.most_common(2)]
 
     # FOR DEBUGGING
     print(term_scores)
