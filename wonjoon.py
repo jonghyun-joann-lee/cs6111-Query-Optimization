@@ -32,9 +32,20 @@ def collect_feedback(results):
 
     Return:
     - (list): A list of search results that the user marked as relevant.
+    - (list): A list of search results that the user marked as irrelevant.
+
     """
     relevant_results = []
+    irrelevant_results = []
+    
     for index, result in enumerate(results, start=1):
+        # If file format is not in HTML, skip the document
+        if result.get('fileFormat'):
+            print("\n--------------------------------------------")
+            print(f"NON-HTML File format detected. Skipping Result {index}...")
+            print("--------------------------------------------\n")
+            continue
+        
         # Display Results
         print(f"Result {index}\n[")
         print(f" URL: {result['link']}")
@@ -45,7 +56,10 @@ def collect_feedback(results):
         feedback = input(f"Relevant (Y/N)?").strip().lower()
         if feedback == 'y':
             relevant_results.append(result)
-    return relevant_results
+        else:
+            irrelevant_results.append(result)
+            
+    return relevant_results, irrelevant_results
 
 
 def refine_query_rocchio(original_query, relevant_docs, irrelevant_docs, alpha=1, beta=0.75, gamma=0.15):
@@ -126,8 +140,9 @@ def main():
         
         # Display query & Collect feedback
         results = google_search(query, api_key, engine_key, num=10)
-        relevant_results = collect_feedback(results)
+        relevant_results, irrelevant_results = collect_feedback(results)
         precision = len(relevant_results) / len(results)
+        
         
         # Display feedback
         print("======================")
@@ -146,7 +161,6 @@ def main():
             print(f"Still below the desired precision of {target_precision}")
         
         # Perform query augmentation
-        irrelevant_results = [result for result in results if result not in relevant_results]
         new_terms = refine_query_rocchio(query, relevant_results, irrelevant_results)
         print(f"Augmenting by {new_terms}")
 
