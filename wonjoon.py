@@ -18,6 +18,7 @@ def google_search(search_term, api_key, engine_key, **kwargs):
     Return:
     - (list): A list of search result items.
     """
+    
     service = build("customsearch", "v1", developerKey=api_key)
     result = service.cse().list(q=search_term, cx=engine_key, **kwargs).execute()
     return result['items']
@@ -33,8 +34,9 @@ def collect_feedback(results):
     Return:
     - (list): A list of search results that the user marked as relevant.
     - (list): A list of search results that the user marked as irrelevant.
-
+    - (float): A float showing precision@10, calculated only on html files.
     """
+
     relevant_results = []
     irrelevant_results = []
     
@@ -58,11 +60,14 @@ def collect_feedback(results):
             relevant_results.append(result)
         else:
             irrelevant_results.append(result)
-            
-    return relevant_results, irrelevant_results
+    
+    # Calculate precision@10, focusing only on html files
+    precision = len(relevant_results) / (len(relevant_results) + len(irrelevant_results))
+
+    return relevant_results, irrelevant_results, precision
 
 
-def refine_query_rocchio(original_query, relevant_docs, irrelevant_docs, alpha=1, beta=0.75, gamma=0.15):
+def refine_query_rocchio(original_query, relevant_docs, irrelevant_docs, alpha=1.0, beta=0.75, gamma=0.15):
     """
     Refines the search query using the Rocchio's algorithm by adjusting the original query vector based on the vectors
     of relevant and irrelevant documents.
@@ -106,7 +111,7 @@ def refine_query_rocchio(original_query, relevant_docs, irrelevant_docs, alpha=1
     # Get the terms that are not in the original query 
     new_terms = [feature_names[idx] for idx in sorted_indices if feature_names[idx] not in set(re.findall(r'\w+', original_query.lower()))]
 
-    # Return the top 2 new terms
+    # Return the top-scoring 2 new terms
     return ' '.join(new_terms[:2])
 
 
@@ -140,9 +145,7 @@ def main():
         
         # Display query & Collect feedback
         results = google_search(query, api_key, engine_key, num=10)
-        relevant_results, irrelevant_results = collect_feedback(results)
-        precision = len(relevant_results) / len(results)
-        
+        relevant_results, irrelevant_results, precision = collect_feedback(results)
         
         # Display feedback
         print("======================")
