@@ -144,7 +144,7 @@ def refine_query_rocchio(original_query, relevant_docs, irrelevant_docs, alpha=1
         # One best permutation found
         best_permutation = max_count_perms[0]
     else:
-        # Just in case of an error where the list is might be empty
+        # Just in case of an error where the list might be empty
         best_permutation = new_query_words
     
     augment_by = " ".join(new_terms[:2])
@@ -189,8 +189,6 @@ def main():
         if len(results) < 10 and iteration == 0:
             print("Less than 10 query results. Please try a different query")
             break
-        elif len(results) == 0:  # Terminate if in any iteration there are no relevant results 
-            print("No relevant results. Terminating ...")
             
         # Collect user feedback
         relevant_results, irrelevant_results, precision = collect_feedback(results)
