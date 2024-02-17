@@ -1,8 +1,8 @@
+from googleapiclient.discovery import build
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 from itertools import permutations
 from collections import Counter
-from googleapiclient.discovery import build
 import re
 import sys
 
@@ -39,9 +39,9 @@ def collect_feedback(results):
     - results (list): A list of search results.
 
     Return:
-    - (list): A list of search results that the user marked as relevant.
-    - (list): A list of search results that the user marked as irrelevant.
-    - (float): A float showing precision@10, calculated only on html files.
+    - relevant_results (list): A list of search results that the user marked as relevant.
+    - irrelevant_results (list): A list of search results that the user marked as irrelevant.
+    - precision (float): A float showing precision@10, calculated only on html files.
     """
 
     relevant_results = []
@@ -83,12 +83,13 @@ def refine_query_rocchio(original_query, relevant_docs, irrelevant_docs, alpha=1
     - original_query (str): Original search query.
     - relevant_docs (list): List of documents marked as relevant.
     - irrelevant_docs (list): List of documents marked as irrelevant.
-    - alpha (float): The weight of the original query for the revised query.
+    - alpha (float): The weight of the original query for the revised query. 
     - beta (float): The weight of the relevant documents for the revised query.
     - gamma (float): The weight of the irrelevant documents for the revised query.
 
     Return:
-    - (str): A string containing 2 new terms to augment the original query.
+    - augment_by (str): A string containing 2 new terms to augment the original query.
+    - new_query (str): A string containing all terms (new, original) in a new order (best permutation). 
     """
 
     # Process Texts
@@ -130,20 +131,20 @@ def refine_query_rocchio(original_query, relevant_docs, irrelevant_docs, alpha=1
         sections = relevant_texts_str.split(".")
         perm_counts[perm] = sum(len(re.findall(rf"{perm[0]}.*{perm[1]}.*{perm[2]}", section, re.IGNORECASE)) for section in sections)
 
-    # Find the highest count
+    # Find the highest count 
     max_count = perm_counts.most_common(1)[0][1]
 
     # Filter permutations with the maximum count
     max_count_perms = [perm for perm, count in perm_counts.items() if count == max_count]  
 
     if len(max_count_perms) > 1:
-        # Prioritize permutation with the original query at the beginning
+        # If we have a tie, prioritize permutation with the original query at the beginning
         best_permutation = next((perm for perm in max_count_perms if perm[0] == original_query), max_count_perms[0])
     elif len(max_count_perms) == 1:
         # One best permutation found
         best_permutation = max_count_perms[0]
     else:
-        # Just in case the list is empty
+        # Just in case of an error where the list is might be empty
         best_permutation = new_query_words
     
     augment_by = " ".join(new_terms[:2])
@@ -168,6 +169,7 @@ def main():
     engine_key = sys.argv[2]
     target_precision = float(sys.argv[3])
     query = sys.argv[4]
+    iteration = 0
     
     # Main loop
     while True:
@@ -183,11 +185,13 @@ def main():
         # Get query results from the engine
         results = google_search(query, api_key, engine_key, num=10)
         
-        # Terminate when there are less than 10 query results
-        if len(results) < 10:
+        # Terminate when there are less than 10 query results in the first iteration
+        if len(results) < 10 and iteration == 0:
             print("Less than 10 query results. Please try a different query")
             break
-
+        elif len(results) == 0:  # Terminate if in any iteration there are no relevant results 
+            print("No relevant results. Terminating ...")
+            
         # Collect user feedback
         relevant_results, irrelevant_results, precision = collect_feedback(results)
         
@@ -212,6 +216,7 @@ def main():
         print(f"Augmenting by {augment_by}")
         query = new_query
         
+        iteration +=1
 
 if __name__ == "__main__":
     main()
