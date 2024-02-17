@@ -122,7 +122,7 @@ def refine_query_rocchio(original_query, relevant_docs, irrelevant_docs, alpha=1
     # Add top-scoring 2 new terms to the new query
     new_query_words = (original_query, new_terms[0], new_terms[1])
 
-    # Decide best permutation of the query words by highest frequency
+    # Find the best permutation of the query words by the highest frequency
     query_perms = list(permutations(new_query_words))
     relevant_texts_str = " ".join(relevant_texts).lower()
     perm_counts = Counter()
@@ -183,7 +183,7 @@ def main():
         # Get query results from the engine
         results = google_search(query, api_key, engine_key, num=10)
         
-        # Terminate when there is less than 10 query results
+        # Terminate when there are less than 10 query results
         if len(results) < 10:
             print("Less than 10 query results. Please try a different query")
             break
